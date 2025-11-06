@@ -8,11 +8,15 @@ SDK for working with OpenWeatherMap API, supporting two operation modes: ON_DEMA
 
 Add the dependency to your `pom.xml`:
 
+```xml
 <dependency>
     <groupId>ru.sterkhovkv</groupId>
     <artifactId>open-weather-map</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-</dependency>### Requirements
+</dependency>
+```
+
+### Requirements
 
 - Java 21 or higher
 - Maven 3.6+ (for building the project)
@@ -21,6 +25,7 @@ Add the dependency to your `pom.xml`:
 
 ### Getting SDK Instance
 
+```java
 import ru.sterkhovkv.openweathermap.api.OpenWeatherMapSDK;
 import ru.sterkhovkv.openweathermap.api.SDKMode;
 import ru.sterkhovkv.openweathermap.factory.SDKFactory;
@@ -33,23 +38,31 @@ import ru.sterkhovkv.openweathermap.config.ApiVersion;
 import ru.sterkhovkv.openweathermap.config.SDKConfig;
 
 SDKConfig config = SDKConfig.builder()
-.apiVersion(ApiVersion.V2_5)
-.cacheSize(20)
-.cacheTtlMinutes(15)
-.build();
+    .apiVersion(ApiVersion.V2_5)
+    .cacheSize(20)
+    .cacheTtlMinutes(15)
+    .build();
+    
+OpenWeatherMapSDK sdk = SDKFactory.getInstance("your-api-key", SDKMode.ON_DEMAND, config);
+```
 
-OpenWeatherMapSDK sdk = SDKFactory.getInstance("your-api-key", SDKMode.ON_DEMAND, config);**Important:** API key can be passed directly or set in the `OPENWEATHER_API_KEY` environment variable. If the key is not provided, SDK will attempt to use the value from the environment variable.
+**Important:** API key can be passed directly or set in the `OPENWEATHER_API_KEY` environment variable. If the key is not provided, SDK will attempt to use the value from the environment variable.
 
 ### Getting Weather
 
+```java
 import ru.sterkhovkv.openweathermap.model.WeatherResponse;
 
 WeatherResponse weather = sdk.getWeather("Moscow");
 System.out.println("Temperature: " + weather.getTemperature().getTemp() + "K");
-System.out.println("Weather: " + weather.getWeather().getDescription());**Note:** When searching for a city by name, SDK returns information about the **first found city** from OpenWeatherMap API search results.
+System.out.println("Weather: " + weather.getWeather().getDescription());
+```
+
+**Note:** When searching for a city by name, SDK returns information about the **first found city** from OpenWeatherMap API search results.
 
 ### Resource Cleanup
 
+```java
 // Destroy specific instance
 sdk.destroy();
 
@@ -57,26 +70,37 @@ sdk.destroy();
 SDKFactory.removeInstance("your-api-key");
 
 // Destroy all instances
-SDKFactory.removeAllInstances();## Operation Modes
+SDKFactory.removeAllInstances();
+```
+
+## Operation Modes
 
 ### ON_DEMAND
 
 Data is requested only when `getWeather()` is called. If data exists in cache and is still valid (TTL not expired), it is returned from cache without API request.
 
+```java
 OpenWeatherMapSDK sdk = SDKFactory.getInstance("api-key", SDKMode.ON_DEMAND, config);
 WeatherResponse weather = sdk.getWeather("Moscow"); // API request if not in cache
-WeatherResponse cached = sdk.getWeather("Moscow");   // Return from cache (if TTL not expired)### POLLING
+WeatherResponse cached = sdk.getWeather("Moscow");   // Return from cache (if TTL not expired)
+```
+
+### POLLING
 
 Data is automatically updated in the background for all cities in cache at specified intervals. The `getWeather()` method always returns data from cache (zero latency).
 
+```java
 OpenWeatherMapSDK sdk = SDKFactory.getInstance("api-key", SDKMode.POLLING, config);
 sdk.getWeather("Moscow"); // Adds city to cache and starts background updates
 // Scheduler will automatically update data every pollingIntervalMinutes
 // All subsequent getWeather() calls return data from cache instantly
+```
+
 ## Working with Multiple API Keys
 
 SDK supports working with multiple API keys simultaneously. A separate SDK instance is created for each unique API key. Attempting to create a second instance with the same API key will return the existing instance (if mode matches) or throw `IllegalSDKStateException` (if mode differs).
-a
+
+```java
 // Create instances with different API keys
 OpenWeatherMapSDK sdk1 = SDKFactory.getInstance("api-key-1", SDKMode.ON_DEMAND);
 OpenWeatherMapSDK sdk2 = SDKFactory.getInstance("api-key-2", SDKMode.ON_DEMAND);
@@ -96,45 +120,52 @@ SDKFactory.removeInstance("api-key-1");
 boolean exists = SDKFactory.hasInstance("api-key-1");
 
 // Get number of active instances
-int count = SDKFactory.getInstanceCount();## Response Structure
+int count = SDKFactory.getInstanceCount();
+```
+
+## Response Structure
 
 SDK returns a `WeatherResponse` object with the following structure (matches requirements):
 
+```json
 {
-"weather": {
-"main": "Clouds",
-"description": "scattered clouds"
-},
-"temperature": {
-"temp": 269.6,
-"feelsLike": 267.57
-},
-"visibility": 10000,
-"wind": {
-"speed": 1.38
-},
-"datetime": 1675744800,
-"sys": {
-"sunrise": 1675751262,
-"sunset": 1675787560
-},
-"timezone": 3600,
-"name": "Zocca"
-}### Field Description
+  "weather": {
+    "main": "Clouds",
+    "description": "scattered clouds"
+  },
+  "temperature": {
+    "temp": 269.6,
+    "feelsLike": 267.57
+  },
+  "visibility": 10000,
+  "wind": {
+    "speed": 1.38
+  },
+  "datetime": 1675744800,
+  "sys": {
+    "sunrise": 1675751262,
+    "sunset": 1675787560
+  },
+  "timezone": 3600,
+  "name": "Zocca"
+}
+```
+
+### Field Description
 
 - `weather` - weather condition information
-    - `main` - main description (e.g., "Clouds", "Clear")
-    - `description` - detailed description
+  - `main` - main description (e.g., "Clouds", "Clear")
+  - `description` - detailed description
 - `temperature` - temperature information
-    - `temp` - temperature (default in Kelvin)
-    - `feelsLike` - feels like temperature
+  - `temp` - temperature (default in Kelvin)
+  - `feelsLike` - feels like temperature
 - `visibility` - visibility in meters
 - `wind` - wind information
-    - `speed` - wind speed (default in m/s)
+  - `speed` - wind speed (default in m/s)
 - `datetime` - current time as Unix timestamp (UTC)
 - `sys` - system information
-    - `sunrise` - sunrise time (Unix timestamp)
-    - `sunset` - sunset time (Unix timestamp)
+  - `sunrise` - sunrise time (Unix timestamp)
+  - `sunset` - sunset time (Unix timestamp)
 - `timezone` - timezone offset in seconds from UTC
 - `name` - city name
 
@@ -142,20 +173,24 @@ SDK returns a `WeatherResponse` object with the following structure (matches req
 
 ### SDKConfig
 
+```java
 SDKConfig config = SDKConfig.builder()
-.apiVersion(ApiVersion.V3_0)              // V3_0 (default) or V2_5
-.maxCallsPerDay(2000)                     // Maximum requests per day
-.maxCallsPerMinute(60)                    // Maximum requests per minute
-.requestTimeoutSeconds(30)                // Request timeout
-.connectTimeoutSeconds(10)                // Connection timeout
-.cacheSize(10)                            // Cache size (number of cities, default 10)
-.cacheTtlMinutes(10)                      // Cache TTL in minutes (default 10)
-.pollingIntervalMinutes(10)               // Update interval in POLLING mode
-.pollingStrategy(PollingStrategy.STRICT)  // Update strategy
-.preemptiveEpsilonMinutes(1)             // Epsilon for PREEMPTIVE_EPSILON strategy
-.units(TemperatureUnits.METRIC)           // Units (STANDARD, METRIC, IMPERIAL)
-.lang("en")                               // Language for weather descriptions
-.build();**Default values (match requirements):**
+    .apiVersion(ApiVersion.V3_0)              // V3_0 (default) or V2_5
+    .maxCallsPerDay(2000)                     // Maximum requests per day
+    .maxCallsPerMinute(60)                    // Maximum requests per minute
+    .requestTimeoutSeconds(30)                // Request timeout
+    .connectTimeoutSeconds(10)                // Connection timeout
+    .cacheSize(10)                            // Cache size (number of cities, default 10)
+    .cacheTtlMinutes(10)                      // Cache TTL in minutes (default 10)
+    .pollingIntervalMinutes(10)               // Update interval in POLLING mode
+    .pollingStrategy(PollingStrategy.STRICT)  // Update strategy
+    .preemptiveEpsilonMinutes(1)             // Epsilon for PREEMPTIVE_EPSILON strategy
+    .units(TemperatureUnits.METRIC)           // Units (STANDARD, METRIC, IMPERIAL)
+    .lang("en")                               // Language for weather descriptions
+    .build();
+```
+
+**Default values (match requirements):**
 - `cacheSize`: 10 cities (maximum)
 - `cacheTtlMinutes`: 10 minutes (data is considered up-to-date if less than 10 minutes have passed)
 
@@ -173,37 +208,42 @@ SDKConfig config = SDKConfig.builder()
 
 All SDK methods throw exceptions with error reason description:
 
+```java
 try {
-WeatherResponse weather = sdk.getWeather("Moscow");
+    WeatherResponse weather = sdk.getWeather("Moscow");
 } catch (IllegalArgumentException e) {
-// Invalid parameters (e.g., null or empty string for city name)
-System.err.println("Invalid argument: " + e.getMessage());
+    // Invalid parameters (e.g., null or empty string for city name)
+    System.err.println("Invalid argument: " + e.getMessage());
 } catch (IllegalSDKStateException e) {
-// SDK has been destroyed
-System.err.println("SDK destroyed: " + e.getMessage());
+    // SDK has been destroyed
+    System.err.println("SDK destroyed: " + e.getMessage());
 } catch (CityNotFoundException e) {
-// City not found
-System.err.println("City not found: " + e.getMessage());
+    // City not found
+    System.err.println("City not found: " + e.getMessage());
 } catch (InvalidApiKeyException e) {
-// Invalid API key
-System.err.println("Invalid API key: " + e.getMessage());
+    // Invalid API key
+    System.err.println("Invalid API key: " + e.getMessage());
 } catch (ApiRateLimitException e) {
-// Rate limit exceeded
-System.err.println("Rate limit exceeded: " + e.getMessage());
+    // Rate limit exceeded
+    System.err.println("Rate limit exceeded: " + e.getMessage());
 } catch (NetworkException e) {
-// Network error
-System.err.println("Network error: " + e.getMessage());
+    // Network error
+    System.err.println("Network error: " + e.getMessage());
 } catch (BadRequestException e) {
-// Bad request
-System.err.println("Bad request: " + e.getMessage());
-e.getInvalidParameters(); // List of invalid parameters
+    // Bad request
+    System.err.println("Bad request: " + e.getMessage());
+    e.getInvalidParameters(); // List of invalid parameters
 } catch (SDKException e) {
-// General SDK error
-System.err.println("SDK error: " + e.getMessage());
-}## Usage Examples
+    // General SDK error
+    System.err.println("SDK error: " + e.getMessage());
+}
+```
+
+## Usage Examples
 
 ### Example 1: Basic Usage in ON_DEMAND Mode
 
+```java
 import ru.sterkhovkv.openweathermap.api.OpenWeatherMapSDK;
 import ru.sterkhovkv.openweathermap.api.SDKMode;
 import ru.sterkhovkv.openweathermap.config.ApiVersion;
@@ -212,9 +252,9 @@ import ru.sterkhovkv.openweathermap.factory.SDKFactory;
 import ru.sterkhovkv.openweathermap.model.WeatherResponse;
 
 public class BasicExample {
-public static void main(String[] args) {
-String apiKey = "your-api-key-here";
-
+    public static void main(String[] args) {
+        String apiKey = "your-api-key-here";
+        
         // Create configuration
         SDKConfig config = SDKConfig.builder()
             .apiVersion(ApiVersion.V2_5)
@@ -243,13 +283,17 @@ String apiKey = "your-api-key-here";
             SDKFactory.removeInstance(apiKey);
         }
     }
-}### Example 2: Using Cache
+}
+```
 
+### Example 2: Using Cache
+
+```java
 public class CacheExample {
-public static void main(String[] args) {
-String apiKey = "your-api-key-here";
-OpenWeatherMapSDK sdk = SDKFactory.getInstance(apiKey, SDKMode.ON_DEMAND);
-
+    public static void main(String[] args) {
+        String apiKey = "your-api-key-here";
+        OpenWeatherMapSDK sdk = SDKFactory.getInstance(apiKey, SDKMode.ON_DEMAND);
+        
         try {
             // First request - data loaded from API
             long start1 = System.currentTimeMillis();
@@ -271,13 +315,17 @@ OpenWeatherMapSDK sdk = SDKFactory.getInstance(apiKey, SDKMode.ON_DEMAND);
             SDKFactory.removeInstance(apiKey);
         }
     }
-}### Example 3: Working with Multiple Cities
-va
-public class MultipleCitiesExample {
-public static void main(String[] args) {
-String apiKey = "your-api-key-here";
-OpenWeatherMapSDK sdk = SDKFactory.getInstance(apiKey, SDKMode.ON_DEMAND);
+}
+```
 
+### Example 3: Working with Multiple Cities
+
+```java
+public class MultipleCitiesExample {
+    public static void main(String[] args) {
+        String apiKey = "your-api-key-here";
+        OpenWeatherMapSDK sdk = SDKFactory.getInstance(apiKey, SDKMode.ON_DEMAND);
+        
         try {
             String[] cities = {"Paris", "Tokyo", "New York"};
             
@@ -300,12 +348,16 @@ OpenWeatherMapSDK sdk = SDKFactory.getInstance(apiKey, SDKMode.ON_DEMAND);
             SDKFactory.removeInstance(apiKey);
         }
     }
-}### Example 4: POLLING Mode
+}
+```
 
+### Example 4: POLLING Mode
+
+```java
 public class PollingExample {
-public static void main(String[] args) {
-String apiKey = "your-api-key-here";
-
+    public static void main(String[] args) {
+        String apiKey = "your-api-key-here";
+        
         SDKConfig config = SDKConfig.builder()
             .apiVersion(ApiVersion.V2_5)
             .pollingIntervalMinutes(10)  // Update every 10 minutes
@@ -339,13 +391,17 @@ String apiKey = "your-api-key-here";
             SDKFactory.removeInstance(apiKey);
         }
     }
-}### Example 5: Working with Multiple API Keys
-a
-public class MultipleApiKeysExample {
-public static void main(String[] args) {
-String apiKey1 = "first-api-key";
-String apiKey2 = "second-api-key";
+}
+```
 
+### Example 5: Working with Multiple API Keys
+
+```java
+public class MultipleApiKeysExample {
+    public static void main(String[] args) {
+        String apiKey1 = "first-api-key";
+        String apiKey2 = "second-api-key";
+        
         try {
             // Create instances with different keys
             OpenWeatherMapSDK sdk1 = SDKFactory.getInstance(apiKey1, SDKMode.ON_DEMAND);
@@ -369,13 +425,17 @@ String apiKey2 = "second-api-key";
             System.err.println("Error: " + e.getMessage());
         }
     }
-}### Example 6: Error Handling
-ava
-public class ErrorHandlingExample {
-public static void main(String[] args) {
-String apiKey = "your-api-key-here";
-OpenWeatherMapSDK sdk = SDKFactory.getInstance(apiKey, SDKMode.ON_DEMAND);
+}
+```
 
+### Example 6: Error Handling
+
+```java
+public class ErrorHandlingExample {
+    public static void main(String[] args) {
+        String apiKey = "your-api-key-here";
+        OpenWeatherMapSDK sdk = SDKFactory.getInstance(apiKey, SDKMode.ON_DEMAND);
+        
         try {
             // Attempt to get weather for non-existent city
             try {
@@ -403,7 +463,10 @@ OpenWeatherMapSDK sdk = SDKFactory.getInstance(apiKey, SDKMode.ON_DEMAND);
             SDKFactory.removeInstance(apiKey);
         }
     }
-}## Additional Information
+}
+```
+
+## Additional Information
 
 ### Weather Data Caching
 
@@ -421,9 +484,9 @@ SDK also uses an internal cache for city coordinates (geocoding):
 - **TTL**: 24 hours
 - **Normalization**: City names are automatically normalized (converted to lowercase, extra spaces removed) for cache optimization
 - **Benefits**:
-    - Reduces number of requests to Geocoding API
-    - Faster performance for repeated requests for the same cities
-    - Saves API rate limits
+  - Reduces number of requests to Geocoding API
+  - Faster performance for repeated requests for the same cities
+  - Saves API rate limits
 
 For example, requests for `"Moscow"`, `"MOSCOW"`, `"  Moscow  "` will use the same cached result.
 
